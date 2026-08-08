@@ -24,12 +24,12 @@ const DEMO_ROWS = [
   ["NULL POINTERS", "Sample Student H", "Y00XX108", "h@example.edu", "REG-008"],
   ["STACK OVERFLOW", "Sample Student I", "Y00XX109", "i@example.edu", "REG-009"],
   ["STACK OVERFLOW", "Sample Student J", "Y00XX110", "j@example.edu", "REG-010"],
-].map(([teamName, studentName, rollNumber, email, registrationId]) => ({
-  teamName,
-  studentName,
-  rollNumber,
-  email,
-  registrationId,
+].map((r) => ({
+  teamName: r[0] as string,
+  studentName: r[1] as string,
+  rollNumber: r[2] as string,
+  email: r[3] as string,
+  registrationId: r[4] as string,
 }));
 
 function readDemoAttendance(): Record<string, string> {

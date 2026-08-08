@@ -1,7 +1,7 @@
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Student } from "@/lib/attendance-types";
 
-type Props = { student: Student; disabled?: boolean; onToggle: (next: boolean) => void };
+type Props = { student: Student; disabled?: boolean | undefined; onToggle: (next: boolean) => void };
 
 export function StudentRow({ student, disabled, onToggle }: Props) {
   return (
