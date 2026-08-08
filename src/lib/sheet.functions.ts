@@ -19,7 +19,8 @@ export const sheetList = createServerFn({ method: "POST" })
     const text = await res.text();
     if (!res.ok) throw new Error(`Sheet request failed (${res.status}). ${text.slice(0, 200)}`);
     try {
-      return JSON.parse(text) as { students?: Record<string, unknown>[]; error?: string };
+      JSON.parse(text);
+      return { json: text };
     } catch {
       throw new Error(
         "The Web App returned a login page instead of data. Redeploy with access set to “Anyone”.",
@@ -44,7 +45,8 @@ export const sheetMark = createServerFn({ method: "POST" })
     const text = await res.text();
     if (!res.ok) throw new Error(`Could not save attendance (${res.status}). ${text.slice(0, 200)}`);
     try {
-      return JSON.parse(text) as { error?: string };
+      JSON.parse(text);
+      return { json: text };
     } catch {
       throw new Error(
         "The Web App returned a login page instead of data. Redeploy with access set to “Anyone”.",

@@ -78,10 +78,8 @@ export async function fetchStudents(): Promise<Student[]> {
       attendanceTime: marks[r.registrationId] ?? null,
     }));
   }
-  const json = (await sheetList({ data: { url } })) as {
-    students?: RawStudent[];
-    error?: string;
-  };
+  const raw = await sheetList({ data: { url } });
+  const json = JSON.parse(raw.json) as { students?: RawStudent[]; error?: string };
   if (json.error) throw new Error(json.error);
   return (json.students ?? []).map(normalize);
 }
@@ -98,8 +96,7 @@ export async function markAttendance(registrationIds: string[], present: boolean
     return;
   }
   // Proxied through the server to avoid browser CORS limits on Apps Script.
-  const json = (await sheetMark({ data: { url, registrationIds, present } })) as {
-    error?: string;
-  };
+  const raw = await sheetMark({ data: { url, registrationIds, present } });
+  const json = JSON.parse(raw.json) as { error?: string };
   if (json.error) throw new Error(json.error);
 }
