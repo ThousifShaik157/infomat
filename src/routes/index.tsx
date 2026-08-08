@@ -158,7 +158,7 @@ function AttendancePage() {
                 key={value}
                 type="button"
                 onClick={() => setFilter(value)}
-                className={`h-10 truncate rounded-xl text-sm font-semibold transition-colors ${
+                className={`h-10 truncate rounded-xl px-1 text-[13px] font-semibold transition-colors ${
                   filter === value
                     ? "bg-card text-foreground shadow-card"
                     : "text-muted-foreground"
@@ -169,7 +169,7 @@ function AttendancePage() {
             ))}
           </div>
           <Select value={team} onValueChange={setTeam}>
-            <SelectTrigger className="h-12 w-[7.5rem] shrink-0 rounded-2xl bg-card">
+            <SelectTrigger className="h-12 w-[6rem] shrink-0 rounded-2xl bg-card">
               <SelectValue placeholder="Team" />
             </SelectTrigger>
             <SelectContent>
