@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { createFileRoute, redirect, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, X, RefreshCw, CloudOff, LogOut } from "lucide-react";
@@ -19,11 +19,14 @@ import { StatsHeader } from "@/components/attendance/StatsHeader";
 import { TeamCard } from "@/components/attendance/TeamCard";
 import { SettingsDialog } from "@/components/attendance/SettingsDialog";
 import { fetchStudents, getWebAppUrl, markAttendance } from "@/lib/attendance-api";
-import { logout, requireVolunteer } from "@/lib/gate.functions";
+import { getGateStatus, logout } from "@/lib/gate.functions";
 import type { AttendanceFilter, Student } from "@/lib/attendance-types";
 
 export const Route = createFileRoute("/")({
-  loader: () => requireVolunteer(),
+  loader: async () => {
+    const { unlocked } = await getGateStatus();
+    if (!unlocked) throw redirect({ to: "/login" });
+  },
   head: () => ({
     meta: [
       { title: "Coding Club Event Attendance" },
