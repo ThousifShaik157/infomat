@@ -1,4 +1,5 @@
 import type { Student } from "./attendance-types";
+import { sheetList, sheetMark } from "./sheet.functions";
 
 const URL_KEY = "cc_apps_script_url";
 const DEMO_KEY = "cc_demo_attendance";
@@ -77,12 +78,8 @@ export async function fetchStudents(): Promise<Student[]> {
       attendanceTime: marks[r.registrationId] ?? null,
     }));
   }
-  const res = await fetch(`${url}${url.includes("?") ? "&" : "?"}action=list`, {
-    method: "GET",
-    redirect: "follow",
-  });
-  if (!res.ok) throw new Error(`Sheet request failed (${res.status})`);
-  const json = (await res.json()) as { students?: RawStudent[]; error?: string };
+  const raw = await sheetList({ data: { url } });
+  const json = JSON.parse(raw.json) as { students?: RawStudent[]; error?: string };
   if (json.error) throw new Error(json.error);
   return (json.students ?? []).map(normalize);
 }
@@ -98,14 +95,8 @@ export async function markAttendance(registrationIds: string[], present: boolean
     writeDemoAttendance(marks);
     return;
   }
-  const res = await fetch(url, {
-    method: "POST",
-    redirect: "follow",
-    // text/plain avoids a CORS preflight that Apps Script cannot answer.
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "mark", registrationIds, present }),
-  });
-  if (!res.ok) throw new Error(`Could not save attendance (${res.status})`);
-  const json = (await res.json()) as { error?: string };
+  // Proxied through the server to avoid browser CORS limits on Apps Script.
+  const raw = await sheetMark({ data: { url, registrationIds, present } });
+  const json = JSON.parse(raw.json) as { error?: string };
   if (json.error) throw new Error(json.error);
 }
