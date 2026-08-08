@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, X, RefreshCw, CloudOff } from "lucide-react";
+import { Search, X, RefreshCw, CloudOff, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { Input } from "@/components/ui/input";
@@ -18,9 +19,11 @@ import { StatsHeader } from "@/components/attendance/StatsHeader";
 import { TeamCard } from "@/components/attendance/TeamCard";
 import { SettingsDialog } from "@/components/attendance/SettingsDialog";
 import { fetchStudents, getWebAppUrl, markAttendance } from "@/lib/attendance-api";
+import { logout, requireVolunteer } from "@/lib/gate.functions";
 import type { AttendanceFilter, Student } from "@/lib/attendance-types";
 
 export const Route = createFileRoute("/")({
+  loader: () => requireVolunteer(),
   head: () => ({
     meta: [
       { title: "Coding Club Event Attendance" },
@@ -43,6 +46,8 @@ export const Route = createFileRoute("/")({
 
 function AttendancePage() {
   const qc = useQueryClient();
+  const router = useRouter();
+  const signOut = useServerFn(logout);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<AttendanceFilter>("all");
   const [team, setTeam] = useState("all");
@@ -143,6 +148,20 @@ function AttendancePage() {
             )}
           </div>
           <SettingsDialog onSaved={() => refetch()} />
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Sign out"
+            className="size-12 shrink-0 rounded-2xl"
+            onClick={async () => {
+              await qc.cancelQueries();
+              qc.clear();
+              await signOut({});
+              await router.navigate({ to: "/login", replace: true });
+            }}
+          >
+            <LogOut className="size-5" />
+          </Button>
         </div>
 
         <div className="mt-3 flex items-center gap-2">
