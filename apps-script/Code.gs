@@ -1,173 +1,210 @@
-/**
- * Coding Club Event Attendance — Google Apps Script backend.
- *
- * SETUP
- * 1. Open the Google Form response spreadsheet → Extensions → Apps Script.
- * 2. Paste this file, adjust REGISTRATIONS_SHEET and the column names below.
- * 3. Deploy → New deployment → Web app
- *      Execute as: Me
- *      Who has access: Anyone
- * 4. Copy the /exec URL and paste it into the website's settings dialog.
- *
- * The registration sheet is only ever READ. Attendance is written to a
- * separate "Attendance" sheet, keyed by Registration ID (no duplicates).
- */
+function doGet(e) {
+  const action = e && e.parameter && e.parameter.action;
 
-var REGISTRATIONS_SHEET = 'Form Responses 1';
-var ATTENDANCE_SHEET = 'Attendance';
-
-// Header names in the Form response sheet.
-var COL = {
-  teamName: 'Team Name',
-  studentName: 'Student Name',
-  rollNumber: 'Roll Number',
-  email: 'Email',
-  registrationId: 'Registration ID',
-};
-
-var ATTENDANCE_HEADERS = [
-  'Registration ID',
-  'Team Name',
-  'Student Name',
-  'Roll Number',
-  'Status',
-  'Attendance Time',
-];
-
-function json_(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(
-    ContentService.MimeType.JSON
-  );
-}
-
-function ss_() {
-  return SpreadsheetApp.getActiveSpreadsheet();
-}
-
-function getAttendanceSheet_() {
-  var sheet = ss_().getSheetByName(ATTENDANCE_SHEET);
-  if (!sheet) {
-    sheet = ss_().insertSheet(ATTENDANCE_SHEET);
-    sheet.appendRow(ATTENDANCE_HEADERS);
-    sheet.setFrozenRows(1);
+  if (action === "list") {
+    return getStudents();
   }
-  return sheet;
+
+  return getStudents();
 }
 
-function readRegistrations_() {
-  var sheet = ss_().getSheetByName(REGISTRATIONS_SHEET);
-  if (!sheet) throw new Error('Registration sheet "' + REGISTRATIONS_SHEET + '" not found');
-  var values = sheet.getDataRange().getValues();
-  if (values.length < 2) return [];
-  var headers = values[0].map(function (h) {
-    return String(h).trim();
-  });
-  var idx = function (name) {
-    return headers.indexOf(name);
-  };
-  var rows = [];
-  for (var i = 1; i < values.length; i++) {
-    var row = values[i];
-    var get = function (name) {
-      var j = idx(name);
-      return j === -1 ? '' : String(row[j]).trim();
-    };
-    var regId = get(COL.registrationId) || 'ROW-' + (i + 1);
-    if (!get(COL.studentName) && !get(COL.rollNumber)) continue;
-    rows.push({
-      registrationId: regId,
-      teamName: get(COL.teamName) || 'UNASSIGNED',
-      studentName: get(COL.studentName),
-      rollNumber: get(COL.rollNumber),
-      email: get(COL.email),
-    });
+function getStudents() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const values = sheet.getDataRange().getValues();
+
+  if (values.length < 2) {
+    return jsonResponse({ students: [] });
   }
-  return rows;
+
+  const headers = values[0].map(h => String(h).trim());
+
+  // Find important columns
+  const teamCol = findColumn(headers, [
+    "TEAM NAME",
+    "Team Name",
+    "teamName"
+  ]);
+
+  // Attendance columns are created automatically if they don't exist
+  let statusCol = findColumn(headers, [
+    "ATTENDANCE STATUS",
+    "Status"
+  ]);
+
+  let timeCol = findColumn(headers, [
+    "ATTENDANCE TIME",
+    "Attendance Time"
+  ]);
+
+  if (statusCol === -1) {
+    statusCol = headers.length;
+    sheet.getRange(1, statusCol + 1).setValue("ATTENDANCE STATUS");
+    headers.push("ATTENDANCE STATUS");
+  }
+
+  if (timeCol === -1) {
+    timeCol = headers.length;
+    sheet.getRange(1, timeCol + 1).setValue("ATTENDANCE TIME");
+    headers.push("ATTENDANCE TIME");
+  }
+
+  const students = [];
+
+  for (let r = 1; r < values.length; r++) {
+    const row = values[r];
+
+    const teamName =
+      teamCol >= 0 ? String(row[teamCol] || "").trim() : "UNASSIGNED";
+
+    // Find all MEMBER X NAME columns
+    for (let c = 0; c < headers.length; c++) {
+      const header = String(headers[c]).trim();
+
+      const match = header.match(/MEMBER\s*(\d+)\s*NAME/i);
+
+      if (!match) continue;
+
+      const memberNumber = match[1];
+      const studentName = String(row[c] || "").trim();
+
+      if (!studentName) continue;
+
+      const emailCol = findColumn(headers, [
+        `MEMBER ${memberNumber} EMAIL ID`,
+        `MEMBER ${memberNumber} EMAIL`,
+        `EMAIL ID ${memberNumber}`,
+        `MEMBER ${memberNumber} EMAIL ID`
+      ]);
+
+      const rollCol = findColumn(headers, [
+        `MEMBER ${memberNumber} ROLL NO`,
+        `ROLL NO MEMBER ${memberNumber}`,
+        `MEMBER ${memberNumber} ROLL NUMBER`,
+        `ROLL NUMBER MEMBER ${memberNumber}`
+      ]);
+
+      const email =
+        emailCol >= 0 ? String(row[emailCol] || "").trim() : "";
+
+      const rollNumber =
+        rollCol >= 0 ? String(row[rollCol] || "").trim() : "";
+
+      const registrationId = `row-${r + 1}-member-${memberNumber}`;
+
+      const status =
+        statusCol >= 0 ? String(row[statusCol] || "").trim().toLowerCase() : "";
+
+      const attendanceTime =
+        timeCol >= 0 ? String(row[timeCol] || "").trim() : "";
+
+      students.push({
+        registrationId: registrationId,
+        teamName: teamName,
+        studentName: studentName,
+        rollNumber: rollNumber,
+        email: email,
+        present: status === "present",
+        attendanceTime: attendanceTime || null
+      });
+    }
+  }
+
+  return jsonResponse({ students: students });
 }
 
-function readAttendanceMap_() {
-  var sheet = getAttendanceSheet_();
-  var values = sheet.getDataRange().getValues();
-  var map = {};
-  for (var i = 1; i < values.length; i++) {
-    var id = String(values[i][0]).trim();
-    if (!id) continue;
-    map[id] = { row: i + 1, status: String(values[i][4]).trim(), time: values[i][5] };
-  }
-  return map;
-}
-
-function doGet() {
-  try {
-    var attendance = readAttendanceMap_();
-    var students = readRegistrations_().map(function (s) {
-      var a = attendance[s.registrationId];
-      var present = !!a && a.status.toLowerCase() === 'present';
-      return {
-        registrationId: s.registrationId,
-        teamName: s.teamName,
-        studentName: s.studentName,
-        rollNumber: s.rollNumber,
-        email: s.email,
-        status: present ? 'Present' : 'Not Present',
-        attendanceTime: present && a.time ? new Date(a.time).toISOString() : '',
-      };
-    });
-    return json_({ students: students });
-  } catch (err) {
-    return json_({ error: String(err.message || err) });
-  }
-}
 
 function doPost(e) {
-  var lock = LockService.getScriptLock();
-  lock.waitLock(20000);
   try {
-    var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    if (body.action !== 'mark') throw new Error('Unknown action');
+    const data = JSON.parse(e.postData.contents);
 
-    var ids = body.registrationIds || [];
-    var present = body.present !== false;
+    if (data.action === "mark") {
+      return markAttendance(
+        data.registrationIds || [],
+        data.present === true
+      );
+    }
 
-    // Only registered students may be marked.
-    var registered = {};
-    readRegistrations_().forEach(function (s) {
-      registered[s.registrationId] = s;
+    return jsonResponse({ error: "Unknown action" });
+
+  } catch (error) {
+    return jsonResponse({
+      error: error.message
     });
-
-    var sheet = getAttendanceSheet_();
-    var attendance = readAttendanceMap_();
-    var now = new Date();
-    var updated = [];
-
-    ids.forEach(function (id) {
-      var student = registered[id];
-      if (!student) return; // ignore anything not in the Form response sheet
-      var status = present ? 'Present' : 'Not Present';
-      var time = present ? now : '';
-      var existing = attendance[id];
-      if (existing) {
-        // Duplicate-safe: update the single existing row for this Registration ID.
-        sheet.getRange(existing.row, 1, 1, ATTENDANCE_HEADERS.length).setValues([
-          [id, student.teamName, student.studentName, student.rollNumber, status, time],
-        ]);
-      } else {
-        sheet.appendRow([
-          id,
-          student.teamName,
-          student.studentName,
-          student.rollNumber,
-          status,
-          time,
-        ]);
-      }
-      updated.push(id);
-    });
-
-    return json_({ ok: true, updated: updated, time: now.toISOString() });
-  } catch (err) {
-    return json_({ error: String(err.message || err) });
-  } finally {
-    lock.releaseLock();
   }
+}
+
+
+function markAttendance(registrationIds, present) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const values = sheet.getDataRange().getValues();
+
+  if (values.length < 1) {
+    return jsonResponse({ error: "Sheet is empty" });
+  }
+
+  const headers = values[0].map(h => String(h).trim());
+
+  let statusCol = findColumn(headers, [
+    "ATTENDANCE STATUS",
+    "Status"
+  ]);
+
+  let timeCol = findColumn(headers, [
+    "ATTENDANCE TIME",
+    "Attendance Time"
+  ]);
+
+  if (statusCol === -1) {
+    statusCol = headers.length;
+    sheet.getRange(1, statusCol + 1).setValue("ATTENDANCE STATUS");
+  }
+
+  if (timeCol === -1) {
+    timeCol = headers.length + (statusCol === headers.length ? 1 : 0);
+    sheet.getRange(1, timeCol + 1).setValue("ATTENDANCE TIME");
+  }
+
+  const now = new Date();
+
+  registrationIds.forEach(id => {
+    const match = String(id).match(/^row-(\d+)-member-(\d+)$/);
+
+    if (!match) return;
+
+    const rowNumber = Number(match[1]);
+
+    if (present) {
+      sheet.getRange(rowNumber, statusCol + 1).setValue("Present");
+      sheet.getRange(rowNumber, timeCol + 1).setValue(now);
+    } else {
+      sheet.getRange(rowNumber, statusCol + 1).clearContent();
+      sheet.getRange(rowNumber, timeCol + 1).clearContent();
+    }
+  });
+
+  return jsonResponse({ success: true });
+}
+
+
+function findColumn(headers, possibleNames) {
+  const normalizedHeaders = headers.map(h =>
+    String(h).trim().toLowerCase()
+  );
+
+  for (const name of possibleNames) {
+    const index = normalizedHeaders.indexOf(
+      String(name).trim().toLowerCase()
+    );
+
+    if (index !== -1) return index;
+  }
+
+  return -1;
+}
+
+
+function jsonResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
 }
