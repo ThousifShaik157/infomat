@@ -14,15 +14,16 @@ export function StatsHeader({ total, present }: Props) {
       <p className="text-xs font-semibold tracking-[0.2em] opacity-70">CODING CLUB</p>
       <h1 className="mt-1 text-2xl font-bold leading-tight">Event Attendance</h1>
 
-      <div className="mt-5 grid grid-cols-3 gap-2">
+      <div className="mt-5 grid grid-cols-4 gap-2">
         {[
-          { label: "Registered", value: total },
+          { label: "Total", value: total },
           { label: "Present", value: present },
-          { label: "Remaining", value: remaining },
+          { label: "Absent", value: remaining },
+          { label: "Rate", value: `${pct}%` },
         ].map((s) => (
-          <div key={s.label} className="rounded-2xl bg-white/10 px-3 py-3 text-center">
-            <p className="text-2xl font-bold tabular-nums">{s.value}</p>
-            <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide opacity-75">
+          <div key={s.label} className="rounded-2xl bg-white/10 px-1.5 py-3 text-center">
+            <p className="text-xl font-bold tabular-nums">{s.value}</p>
+            <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide opacity-75">
               {s.label}
             </p>
           </div>
