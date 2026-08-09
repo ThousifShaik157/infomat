@@ -25,7 +25,8 @@ type Props = {
 export function TeamCard({ name, members, busy, onToggle, onMarkTeam }: Props) {
   const [confirm, setConfirm] = useState(false);
   const present = members.filter((m) => m.present).length;
-  const allPresent = present === members.length;
+  const pendingCount = members.length - present;
+  const allPresent = pendingCount === 0;
 
   return (
     <section className="rounded-3xl border border-border bg-card p-4 shadow-card">
@@ -34,7 +35,7 @@ export function TeamCard({ name, members, busy, onToggle, onMarkTeam }: Props) {
           <h2 className="truncate text-base font-bold uppercase tracking-wide">{name}</h2>
           <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
             <Users className="size-3.5 shrink-0" />
-            {members.length} Members · {present}/{members.length} Present
+            {members.length} Members · {present} Present
           </p>
         </div>
         <Button
@@ -63,15 +64,15 @@ export function TeamCard({ name, members, busy, onToggle, onMarkTeam }: Props) {
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
         <AlertDialogContent className="rounded-3xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Mark entire team present?</AlertDialogTitle>
+            <AlertDialogTitle>Mark all members of {name} as Present?</AlertDialogTitle>
             <AlertDialogDescription>
-              All {members.length} members of {name} will be marked present with the current time.
+              {pendingCount} members will be marked present.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => onMarkTeam(members.filter((m) => !m.present))}>
-              Mark present
+              Confirm
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
