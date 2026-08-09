@@ -1,10 +1,4 @@
 function doGet(e) {
-  const action = e && e.parameter && e.parameter.action;
-
-  if (action === "list") {
-    return getStudents();
-  }
-
   return getStudents();
 }
 
@@ -17,36 +11,11 @@ function getStudents() {
   }
 
   const headers = values[0].map(h => String(h).trim());
-
-  // Find important columns
   const teamCol = findColumn(headers, [
     "TEAM NAME",
     "Team Name",
     "teamName"
   ]);
-
-  // Attendance columns are created automatically if they don't exist
-  let statusCol = findColumn(headers, [
-    "ATTENDANCE STATUS",
-    "Status"
-  ]);
-
-  let timeCol = findColumn(headers, [
-    "ATTENDANCE TIME",
-    "Attendance Time"
-  ]);
-
-  if (statusCol === -1) {
-    statusCol = headers.length;
-    sheet.getRange(1, statusCol + 1).setValue("ATTENDANCE STATUS");
-    headers.push("ATTENDANCE STATUS");
-  }
-
-  if (timeCol === -1) {
-    timeCol = headers.length;
-    sheet.getRange(1, timeCol + 1).setValue("ATTENDANCE TIME");
-    headers.push("ATTENDANCE TIME");
-  }
 
   const students = [];
 
@@ -54,13 +23,14 @@ function getStudents() {
     const row = values[r];
 
     const teamName =
-      teamCol >= 0 ? String(row[teamCol] || "").trim() : "UNASSIGNED";
+      teamCol >= 0
+        ? String(row[teamCol] || "").trim()
+        : "UNASSIGNED";
 
-    // Find all MEMBER X NAME columns
+    // Find MEMBER 1, MEMBER 2, MEMBER 3, etc.
     for (let c = 0; c < headers.length; c++) {
       const header = String(headers[c]).trim();
-
-      const match = header.match(/MEMBER\s*(\d+)\s*NAME/i);
+      const match = header.match(/^MEMBER\s*(\d+)\s*NAME$/i);
 
       if (!match) continue;
 
@@ -71,34 +41,53 @@ function getStudents() {
 
       const emailCol = findColumn(headers, [
         `MEMBER ${memberNumber} EMAIL ID`,
-        `MEMBER ${memberNumber} EMAIL`,
-        `EMAIL ID ${memberNumber}`,
-        `MEMBER ${memberNumber} EMAIL ID`
+        `MEMBER ${memberNumber} EMAIL`
       ]);
 
       const rollCol = findColumn(headers, [
         `MEMBER ${memberNumber} ROLL NO`,
-        `ROLL NO MEMBER ${memberNumber}`,
         `MEMBER ${memberNumber} ROLL NUMBER`,
+        `ROLL NO MEMBER ${memberNumber}`,
         `ROLL NUMBER MEMBER ${memberNumber}`
       ]);
 
+      const statusHeader = `MEMBER ${memberNumber} ATTENDANCE STATUS`;
+      const timeHeader = `MEMBER ${memberNumber} ATTENDANCE TIME`;
+
+      let statusCol = findColumn(headers, [statusHeader]);
+      let timeCol = findColumn(headers, [timeHeader]);
+
+      // Create attendance columns if they don't exist
+      if (statusCol === -1) {
+        statusCol = headers.length;
+        sheet.getRange(1, statusCol + 1).setValue(statusHeader);
+        headers.push(statusHeader);
+      }
+
+      if (timeCol === -1) {
+        timeCol = headers.length;
+        sheet.getRange(1, timeCol + 1).setValue(timeHeader);
+        headers.push(timeHeader);
+      }
+
       const email =
-        emailCol >= 0 ? String(row[emailCol] || "").trim() : "";
+        emailCol >= 0
+          ? String(row[emailCol] || "").trim()
+          : "";
 
       const rollNumber =
-        rollCol >= 0 ? String(row[rollCol] || "").trim() : "";
-
-      const registrationId = `row-${r + 1}-member-${memberNumber}`;
+        rollCol >= 0
+          ? String(row[rollCol] || "").trim()
+          : "";
 
       const status =
-        statusCol >= 0 ? String(row[statusCol] || "").trim().toLowerCase() : "";
+        String(row[statusCol] || "").trim().toLowerCase();
 
       const attendanceTime =
-        timeCol >= 0 ? String(row[timeCol] || "").trim() : "";
+        String(row[timeCol] || "").trim();
 
       students.push({
-        registrationId: registrationId,
+        registrationId: `row-${r + 1}-member-${memberNumber}`,
         teamName: teamName,
         studentName: studentName,
         rollNumber: rollNumber,
@@ -115,7 +104,7 @@ function getStudents() {
 
 function doPost(e) {
   try {
-    const data = JSON.parse(e.postData.contents);
+    const data = JSON.parse(e.postData.contents || "{}");
 
     if (data.action === "mark") {
       return markAttendance(
@@ -124,7 +113,9 @@ function doPost(e) {
       );
     }
 
-    return jsonResponse({ error: "Unknown action" });
+    return jsonResponse({
+      error: "Unknown action"
+    });
 
   } catch (error) {
     return jsonResponse({
@@ -139,64 +130,94 @@ function markAttendance(registrationIds, present) {
   const values = sheet.getDataRange().getValues();
 
   if (values.length < 1) {
-    return jsonResponse({ error: "Sheet is empty" });
+    return jsonResponse({
+      error: "Sheet is empty"
+    });
   }
 
   const headers = values[0].map(h => String(h).trim());
-
-  let statusCol = findColumn(headers, [
-    "ATTENDANCE STATUS",
-    "Status"
-  ]);
-
-  let timeCol = findColumn(headers, [
-    "ATTENDANCE TIME",
-    "Attendance Time"
-  ]);
-
-  if (statusCol === -1) {
-    statusCol = headers.length;
-    sheet.getRange(1, statusCol + 1).setValue("ATTENDANCE STATUS");
-  }
-
-  if (timeCol === -1) {
-    timeCol = headers.length + (statusCol === headers.length ? 1 : 0);
-    sheet.getRange(1, timeCol + 1).setValue("ATTENDANCE TIME");
-  }
-
   const now = new Date();
 
   registrationIds.forEach(id => {
-    const match = String(id).match(/^row-(\d+)-member-(\d+)$/);
+
+    const match = String(id).match(
+      /^row-(\d+)-member-(\d+)$/
+    );
 
     if (!match) return;
 
     const rowNumber = Number(match[1]);
+    const memberNumber = match[2];
+
+    const statusHeader =
+      `MEMBER ${memberNumber} ATTENDANCE STATUS`;
+
+    const timeHeader =
+      `MEMBER ${memberNumber} ATTENDANCE TIME`;
+
+    let statusCol = findColumn(headers, [statusHeader]);
+    let timeCol = findColumn(headers, [timeHeader]);
+
+    // Create columns if necessary
+    if (statusCol === -1) {
+      statusCol = headers.length;
+      sheet
+        .getRange(1, statusCol + 1)
+        .setValue(statusHeader);
+      headers.push(statusHeader);
+    }
+
+    if (timeCol === -1) {
+      timeCol = headers.length;
+      sheet
+        .getRange(1, timeCol + 1)
+        .setValue(timeHeader);
+      headers.push(timeHeader);
+    }
 
     if (present) {
-      sheet.getRange(rowNumber, statusCol + 1).setValue("Present");
-      sheet.getRange(rowNumber, timeCol + 1).setValue(now);
+
+      sheet
+        .getRange(rowNumber, statusCol + 1)
+        .setValue("Present");
+
+      sheet
+        .getRange(rowNumber, timeCol + 1)
+        .setValue(now);
+
     } else {
-      sheet.getRange(rowNumber, statusCol + 1).clearContent();
-      sheet.getRange(rowNumber, timeCol + 1).clearContent();
+
+      sheet
+        .getRange(rowNumber, statusCol + 1)
+        .clearContent();
+
+      sheet
+        .getRange(rowNumber, timeCol + 1)
+        .clearContent();
     }
   });
 
-  return jsonResponse({ success: true });
+  return jsonResponse({
+    success: true
+  });
 }
 
 
 function findColumn(headers, possibleNames) {
+
   const normalizedHeaders = headers.map(h =>
     String(h).trim().toLowerCase()
   );
 
   for (const name of possibleNames) {
+
     const index = normalizedHeaders.indexOf(
       String(name).trim().toLowerCase()
     );
 
-    if (index !== -1) return index;
+    if (index !== -1) {
+      return index;
+    }
   }
 
   return -1;
@@ -204,6 +225,7 @@ function findColumn(headers, possibleNames) {
 
 
 function jsonResponse(data) {
+
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
