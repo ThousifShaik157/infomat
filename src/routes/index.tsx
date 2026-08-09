@@ -90,6 +90,8 @@ function AttendancePage() {
     }: {
       ids: string[];
       present: boolean;
+      source?: "team" | "individual";
+      teamName?: string;
     }) => markAttendance(ids, present),
 
     onMutate: async ({ ids, present }) => {
@@ -127,11 +129,15 @@ function AttendancePage() {
     },
 
     onSuccess: (_d, vars) => {
-      toast.success(
-        vars.present
-          ? "Marked present"
-          : "Marked not present",
-      );
+      if (vars.source === "team" && vars.teamName) {
+        toast.success(`All ${vars.teamName} members marked Present.`);
+      } else {
+        toast.success(
+          vars.present
+            ? "Marked present"
+            : "Marked not present",
+        );
+      }
     },
 
     onSettled: () => {
@@ -435,6 +441,8 @@ function AttendancePage() {
                       m.registrationId,
                   ),
                   present: true,
+                  source: "team",
+                  teamName: name,
                 });
               }}
             />
