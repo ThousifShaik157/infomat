@@ -17,19 +17,19 @@ import {
 } from "@/components/ui/select";
 import { StatsHeader } from "@/components/attendance/StatsHeader";
 import { TeamCard } from "@/components/attendance/TeamCard";
-import { SettingsDialog } from "@/components/attendance/SettingsDialog";
 import {
   fetchStudents,
-  getWebAppUrl,
   markAttendance,
+  setConfiguredUrl,
 } from "@/lib/attendance-api";
-import { getGateStatus, logout } from "@/lib/gate.functions";
+import { getGateStatus, getSettings, logout } from "@/lib/gate.functions";
 import type { AttendanceFilter, Student } from "@/lib/attendance-types";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
     const { unlocked } = await getGateStatus();
     if (!unlocked) throw redirect({ to: "/login" });
+    return await getSettings();
   },
 
   head: () => ({
@@ -61,6 +61,8 @@ function AttendancePage() {
   const qc = useQueryClient();
   const router = useRouter();
   const signOut = useServerFn(logout);
+  const settings = Route.useLoaderData();
+  useMemo(() => setConfiguredUrl(settings.webAppUrl), [settings.webAppUrl]);
 
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<AttendanceFilter>("all");
@@ -238,9 +240,7 @@ function AttendancePage() {
     team,
   ]);
 
-  const connected =
-    typeof window !== "undefined" &&
-    getWebAppUrl() !== "";
+  const connected = settings.webAppUrl !== "";
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-xl overflow-x-hidden px-4 pt-4 pb-24">
@@ -251,6 +251,7 @@ function AttendancePage() {
           <StatsHeader
             total={total}
             present={present}
+            eventName={settings.eventName}
           />
         </div>
       </div>
@@ -284,10 +285,6 @@ function AttendancePage() {
               </button>
             )}
           </div>
-
-          <SettingsDialog
-            onSaved={() => refetch()}
-          />
 
           <Button
             variant="outline"
@@ -371,7 +368,7 @@ function AttendancePage() {
         <p className="mt-2 flex items-start gap-2 rounded-2xl border border-dashed border-border bg-card px-4 py-3 text-xs text-muted-foreground">
           <CloudOff className="mt-0.5 size-4 shrink-0" />
 
-          Showing sample data. Tap the settings button to connect your Google Apps Script Web App URL.
+          Showing sample data. Ask the event Head to connect the Google Apps Script Web App URL.
         </p>
       )}
 
