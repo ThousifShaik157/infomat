@@ -28,14 +28,15 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [headMode, setHeadMode] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setError("");
     try {
-      const res = await signIn({ data: { username, password } });
-      if (res.ok) await router.navigate({ to: "/" });
+      const res = await signIn({ data: { username, password, head: headMode } });
+      if (res.ok) await router.navigate({ to: res.role === "head" ? "/head" : "/" });
       else setError("Incorrect username or password.");
     } catch {
       setError("Something went wrong. Try again.");
@@ -51,9 +52,13 @@ function LoginPage() {
           <div className="grid size-14 place-items-center rounded-2xl bg-primary/10 text-primary">
             <Lock className="size-7" />
           </div>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight">Volunteer Login</h1>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight">
+            {headMode ? "Head Login" : "Volunteer Login"}
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Only student volunteers can mark event attendance.
+            {headMode
+              ? "Event Head access for system settings."
+              : "Only student volunteers can mark event attendance."}
           </p>
         </div>
 
@@ -93,6 +98,17 @@ function LoginPage() {
             {busy ? <Loader2 className="size-5 animate-spin" /> : "Sign in"}
           </Button>
         </form>
+
+        <button
+          type="button"
+          onClick={() => {
+            setHeadMode((v) => !v);
+            setError("");
+          }}
+          className="mt-4 w-full text-center text-sm font-semibold text-muted-foreground underline underline-offset-4"
+        >
+          {headMode ? "Volunteer Login" : "Head Login"}
+        </button>
       </div>
     </main>
   );

@@ -4,9 +4,17 @@ import { sheetList, sheetMark } from "./sheet.functions";
 const URL_KEY = "cc_apps_script_url";
 const DEMO_KEY = "cc_demo_attendance";
 
+let configuredUrl = "";
+
 export function getWebAppUrl(): string {
+  if (configuredUrl) return configuredUrl;
   if (typeof window === "undefined") return "";
   return window.localStorage.getItem(URL_KEY) ?? "";
+}
+
+/** Set from the Head-managed server settings. */
+export function setConfiguredUrl(url: string) {
+  configuredUrl = url.trim();
 }
 
 export function setWebAppUrl(url: string) {

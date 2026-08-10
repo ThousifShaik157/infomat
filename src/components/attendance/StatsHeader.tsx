@@ -1,8 +1,8 @@
 import { Progress } from "@/components/ui/progress";
 
-type Props = { total: number; present: number };
+type Props = { total: number; present: number; eventName?: string };
 
-export function StatsHeader({ total, present }: Props) {
+export function StatsHeader({ total, present, eventName }: Props) {
   const remaining = total - present;
   const pct = total === 0 ? 0 : Math.round((present / total) * 100);
 
@@ -11,7 +11,9 @@ export function StatsHeader({ total, present }: Props) {
       className="rounded-3xl px-5 pt-5 pb-6 text-surface-ink-foreground shadow-float"
       style={{ backgroundImage: "var(--gradient-ink)" }}
     >
-      <p className="text-xs font-semibold tracking-[0.2em] opacity-70">CODING CLUB</p>
+      <p className="text-xs font-semibold tracking-[0.2em] opacity-70">
+        {eventName ?? "CODING CLUB"}
+      </p>
       <h1 className="mt-1 text-2xl font-bold leading-tight">Event Attendance</h1>
 
       <div className="mt-5 grid grid-cols-4 gap-2">
