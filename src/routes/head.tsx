@@ -7,7 +7,14 @@ import { Toaster } from "@/components/ui/sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { getGateStatus, getSettings, logout, saveSettings } from "@/lib/gate.functions";
+import {
+  changeHeadPassword,
+  getGateStatus,
+  getSettings,
+  logout,
+  saveSettings,
+  saveVolunteerCredentials,
+} from "@/lib/gate.functions";
 
 export const Route = createFileRoute("/head")({
   loader: async () => {
@@ -44,6 +51,50 @@ function HeadDashboard() {
   const [eventName, setEventName] = useState(current.eventName);
   const [webAppUrl, setWebAppUrl] = useState(current.webAppUrl);
   const [busy, setBusy] = useState(false);
+  const saveVolunteer = useServerFn(saveVolunteerCredentials);
+  const changePassword = useServerFn(changeHeadPassword);
+  const [volUser, setVolUser] = useState(current.volunteerUsername);
+  const [volPass, setVolPass] = useState("");
+  const [volBusy, setVolBusy] = useState(false);
+  const [curPass, setCurPass] = useState("");
+  const [newPass, setNewPass] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+
+  async function onSaveVolunteer(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setVolBusy(true);
+    try {
+      const res = await saveVolunteer({ data: { username: volUser, password: volPass } });
+      if (res.ok) {
+        toast.success("Volunteer login updated.");
+        setVolPass("");
+        await router.invalidate();
+      } else toast.error(res.error);
+    } catch {
+      toast.error("Could not update volunteer login. Try again.");
+    } finally {
+      setVolBusy(false);
+    }
+  }
+
+  async function onChangePassword(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setPwBusy(true);
+    try {
+      const res = await changePassword({
+        data: { currentPassword: curPass, newPassword: newPass },
+      });
+      if (res.ok) {
+        toast.success("Head password changed.");
+        setCurPass("");
+        setNewPass("");
+      } else toast.error(res.error);
+    } catch {
+      toast.error("Could not change password. Try again.");
+    } finally {
+      setPwBusy(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
