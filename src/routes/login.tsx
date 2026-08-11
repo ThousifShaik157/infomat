@@ -10,9 +10,9 @@ import { login } from "@/lib/gate.functions";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Volunteer Login — Informatrix Attendance" },
-      { name: "description", content: "Restricted access. Student volunteers sign in to mark event attendance for Informatrix." },
-      { property: "og:title", content: "Volunteer Login — Informatrix Attendance" },
+      { title: "Login — Attendance" },
+      { name: "description", content: "Restricted access. Student volunteers sign in to mark event attendance." },
+      { property: "og:title", content: "Login — Attendance" },
       { property: "og:description", content: "Restricted access for student volunteers managing event attendance." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

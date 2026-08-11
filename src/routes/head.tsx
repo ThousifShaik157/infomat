@@ -18,16 +18,16 @@ export const Route = createFileRoute("/head")({
   },
   head: () => ({
     meta: [
-      { title: "Head Dashboard — INFOMAT Attendance" },
+      { title: "Head Dashboard — Attendance" },
       {
         name: "description",
         content:
-          "Event Head settings for INFOMAT: update the event name and the Google Apps Script data-source URL used by volunteers.",
+          "Event Head settings: update the event name and the Google Apps Script data-source URL used by volunteers.",
       },
-      { property: "og:title", content: "Head Dashboard — INFOMAT Attendance" },
+      { property: "og:title", content: "Head Dashboard — Attendance" },
       {
         property: "og:description",
-        content: "Manage the event name and attendance data source for INFOMAT.",
+        content: "Manage the event name and attendance data source.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
