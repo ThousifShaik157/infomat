@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      app_config: {
+        Row: {
+          event_name: string
+          head_password_hash: string
+          head_username: string
+          id: boolean
+          updated_at: string
+          volunteer_password_hash: string
+          volunteer_username: string
+          web_app_url: string
+        }
+        Insert: {
+          event_name?: string
+          head_password_hash?: string
+          head_username?: string
+          id?: boolean
+          updated_at?: string
+          volunteer_password_hash?: string
+          volunteer_username?: string
+          web_app_url?: string
+        }
+        Update: {
+          event_name?: string
+          head_password_hash?: string
+          head_username?: string
+          id?: boolean
+          updated_at?: string
+          volunteer_password_hash?: string
+          volunteer_username?: string
+          web_app_url?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
