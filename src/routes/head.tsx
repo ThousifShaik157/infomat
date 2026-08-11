@@ -171,6 +171,87 @@ function HeadDashboard() {
         </Button>
       </form>
 
+      <form
+        onSubmit={onSaveVolunteer}
+        className="mt-4 space-y-4 rounded-3xl bg-card p-5 shadow-card"
+      >
+        <h2 className="text-lg font-bold">Volunteer Login</h2>
+        <div className="space-y-2">
+          <Label htmlFor="volUser">Volunteer Username</Label>
+          <Input
+            id="volUser"
+            value={volUser}
+            onChange={(e) => setVolUser(e.target.value)}
+            autoComplete="off"
+            className="h-14 rounded-2xl text-base"
+            required
+          />
+          <p className="text-xs text-muted-foreground">
+            Currently configured: {current.volunteerUsername || "Not set"}
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="volPass">New Volunteer Password</Label>
+          <Input
+            id="volPass"
+            type="password"
+            value={volPass}
+            onChange={(e) => setVolPass(e.target.value)}
+            autoComplete="new-password"
+            placeholder="At least 6 characters"
+            className="h-14 rounded-2xl text-base"
+            required
+          />
+        </div>
+        <Button
+          type="submit"
+          disabled={volBusy}
+          className="h-14 w-full rounded-2xl text-base font-semibold"
+        >
+          {volBusy ? <Loader2 className="size-5 animate-spin" /> : "Update Volunteer Login"}
+        </Button>
+      </form>
+
+      <form
+        onSubmit={onChangePassword}
+        className="mt-4 space-y-4 rounded-3xl bg-card p-5 shadow-card"
+      >
+        <h2 className="text-lg font-bold">Change My Head Password</h2>
+        <div className="space-y-2">
+          <Label htmlFor="curPass">Current Password</Label>
+          <Input
+            id="curPass"
+            type="password"
+            value={curPass}
+            onChange={(e) => setCurPass(e.target.value)}
+            autoComplete="current-password"
+            className="h-14 rounded-2xl text-base"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="newPass">New Password</Label>
+          <Input
+            id="newPass"
+            type="password"
+            value={newPass}
+            onChange={(e) => setNewPass(e.target.value)}
+            autoComplete="new-password"
+            placeholder="At least 8 characters"
+            className="h-14 rounded-2xl text-base"
+            required
+          />
+        </div>
+        <Button
+          type="submit"
+          disabled={pwBusy}
+          variant="secondary"
+          className="h-14 w-full rounded-2xl text-base font-semibold"
+        >
+          {pwBusy ? <Loader2 className="size-5 animate-spin" /> : "Change Password"}
+        </Button>
+      </form>
+
       <div className="mt-4 flex gap-2">
         <Button
           variant="secondary"
